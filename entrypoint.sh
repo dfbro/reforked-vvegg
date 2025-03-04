@@ -56,7 +56,7 @@ fi
 if [ -e "/dev/kvm" ]; then
     qemu_cmd+=" -enable-kvm -cpu host -smp $(nproc)"
 else
-    qemu_cmd+=" -cpu max,+avx -smp $(nproc)"
+    qemu_cmd+=" -cpu kvm64,+avx -smp $(nproc)"
 fi
 
 if [ "$VNC" -eq 1 ]; then
