@@ -32,7 +32,7 @@ if [ -n "$ADDITIONAL_PORTS" ] && ! [[ "$ADDITIONAL_PORTS" =~ ^[0-9]+( [0-9]+)*$ 
     echo -e " ${r}●${w} Your additional ports are invalid.${reset}"
     exit 1
 fi
-qemu_cmd="qemu-system-x86_64 -monitor unix:/home/container/qemu-monitor.sock,server,nowait -serial mon:stdio -drive file=${n,,}.qcow2,format=qcow2 -virtfs local,path=shared,mount_tag=shared,security_model=none -m ${SERVER_MEMORY} -net nic,model=virtio"
+qemu_cmd="qemu-system-x86_64 -drive file=${n,,}.qcow2,format=qcow2 -virtfs local,path=shared,mount_tag=shared,security_model=none -m ${SERVER_MEMORY} -net nic,model=virtio"
 if [ ! -e "${n,,}.qcow2" ]; then
     echo -e "${DOWNLOAD}"
     wget --user-agent="versevm-imagedownloader" "https://github.com/rdpmakers/reforked-vvegg/raw/main/versevm/alpine.qcow2.gz" -O "${n}.qcow2.gz" > /dev/null 2>&1
@@ -59,13 +59,6 @@ else
     qemu_cmd+=" -cpu max,+avx -smp $(nproc)"
 fi
 
-cleanup() {
-    echo "Container is stopping, sending ACPI shutdown to QEMU..."
-    echo "system_powerdown" | nc -U /home/container/qemu-monitor.sock
-}
-
-trap cleanup SIGTERM SIGINT
-
 if [ "$VNC" -eq 1 ]; then
     echo -e "${BOOT_VNC}"
     eval "$qemu_cmd"
@@ -73,7 +66,3 @@ else
     echo -e "${BOOT_DONE}"
     eval "$qemu_cmd"
 fi
-
-
-#i hope this thing is good
-wait $!
