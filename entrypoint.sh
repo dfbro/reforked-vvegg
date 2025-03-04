@@ -58,10 +58,22 @@ if [ -e "/dev/kvm" ]; then
 else
     qemu_cmd+=" -cpu max,+avx -smp $(nproc)"
 fi
+
+cleanup() {
+    echo "Container is stopping, sending ACPI shutdown to QEMU..."
+    echo "system_powerdown" | nc -U /home/container/qemu-monitor.sock
+}
+
+trap cleanup SIGTERM SIGINT
+
 if [ "$VNC" -eq 1 ]; then
     echo -e "${BOOT_VNC}"
-    eval "$qemu_cmd" > /dev/null 2>&1
+    eval "$qemu_cmd"
 else
     echo -e "${BOOT_DONE}"
     eval "$qemu_cmd"
 fi
+
+
+#i hope this thing is good
+wait $!
