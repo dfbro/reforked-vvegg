@@ -5,4 +5,4 @@ RUN /bin/sh -c "apk add --update --no-cache ca-certificates bash qemu-system-x86
 WORKDIR /root
 STOPSIGNAL SIGTERM
 COPY ./entrypoint.sh /entrypoint.sh
-CMD ["/bin/bash" "/entrypoint.sh"]
+CMD ["/bin/bash", "/entrypoint.sh"]
