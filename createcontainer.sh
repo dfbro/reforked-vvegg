@@ -2,9 +2,7 @@
 docker create \
   --name jammied-container \
   --restart always \
-  -p 2222:2222 \
-  -p 2082:2082 \
-  -p 8443:8443 \
+  --network host \
   --device /dev/kvm:/dev/kvm \
   -i -t \
   local:jammied
