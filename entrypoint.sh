@@ -12,7 +12,7 @@ trap cleanup SIGTERM
 cd /root
 if [ ! -e /root/jammy.qcow2 ]; then
   wget -O /root/jammy.qcow2 https://cloud-images.ubuntu.com/minimal/releases/jammy/release/ubuntu-22.04-minimal-cloudimg-amd64.img
-  qemu-img resize /root/jammy.qcow2
+  qemu-img resize /root/jammy.qcow2 +22G
   wget -O /root/config.img https://github.com/rdpmakers/freeroot-KVM/raw/refs/heads/main/user-data.img
   mkdir /qemu-share
 fi
