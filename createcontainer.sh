@@ -9,4 +9,4 @@ docker create \
   -i -t \
   local:jammied
 
-docker start -i jammied-container
+docker start jammied-container
