@@ -32,7 +32,7 @@ if [ -n "$ADDITIONAL_PORTS" ] && ! [[ "$ADDITIONAL_PORTS" =~ ^[0-9]+( [0-9]+)*$ 
     echo -e " ${r}●${w} Your additional ports are invalid.${reset}"
     exit 1
 fi
-qemu_cmd="qemu-system-x86_64 -drive file=${n,,}.qcow2,format=qcow2 -virtfs local,path=shared,mount_tag=shared,security_model=none -m ${SERVER_MEMORY} -net nic,model=virtio"
+qemu_cmd="qemu-system-x86_64 -drive file=${n,,}.qcow2,format=qcow2 -virtfs local,path=shared,mount_tag=shared,security_model=none -m ${SERVER_MEMORY} -net nic,model=virtio -monitor unix:/home/container/qemu-monitor.sock,server,nowait"
 if [ ! -e "${n,,}.qcow2" ]; then
     echo -e "${DOWNLOAD}"
     wget --user-agent="versevm-imagedownloader" "https://github.com/rdpmakers/reforked-vvegg/raw/main/versevm/alpine.qcow2.gz" -O "${n}.qcow2.gz" > /dev/null 2>&1
@@ -44,7 +44,7 @@ fi
 echo -e "${BOOT}"
 mkdir -p shared
 if [ "$VNC" -eq 1 ]; then
-    qemu_cmd+=" -vnc :$((SERVER_PORT - 5900)) -net user"
+    qemu_cmd+=" -vnc :$((SERVER_PORT - 5900)) -net user,hostfwd=tcp::${SERVER_PORT}-:22"
 else
     qemu_cmd+=" -nographic -net user,hostfwd=tcp::${SERVER_PORT}-:22"
     IFS=' ' read -ra ports <<< "${ADDITIONAL_PORTS}"
@@ -59,10 +59,26 @@ else
     qemu_cmd+=" -cpu kvm64,+avx -smp $(nproc)"
 fi
 
-if [ "$VNC" -eq 1 ]; then
-    echo -e "${BOOT_VNC}"
-    eval "$qemu_cmd"
-else
-    echo -e "${BOOT_DONE}"
-    eval "$qemu_cmd"
-fi
+# Start QEMU in the background
+eval "$qemu_cmd &"
+QEMU_PID=$!
+echo -e "${BOOT_DONE}"
+
+# Function to send ACPI shutdown when script is terminated
+shutdown_qemu() {
+    echo -e "${b}●${w} Sending ACPI shutdown to QEMU...${reset}"
+    echo "system_powerdown" | socat - UNIX-CONNECT:/home/container/qemu-monitor.sock
+    wait $QEMU_PID 2>/dev/null  # Ensure QEMU exits
+    exit 0
+}
+
+# Trap SIGINT (Ctrl+C), SIGTERM, and EXIT
+trap shutdown_qemu SIGINT SIGTERM EXIT
+
+# Attach to the QEMU monitor with socat
+echo -e "${b}●${w} Attaching to QEMU monitor... (Press Ctrl+] to exit)${reset}"
+stty raw -echo  # Enable raw mode to pass Ctrl+C to QEMU
+socat - UNIX-CONNECT:/home/container/qemu-monitor.sock
+stty sane  # Restore terminal settings after socat exits
+
+shutdown_qemu  # Call shutdown function if socat exits normally
