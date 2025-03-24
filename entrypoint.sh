@@ -77,8 +77,6 @@ trap shutdown_qemu SIGINT SIGTERM EXIT
 
 # Attach to the QEMU monitor with socat
 echo -e "${b}●${w} Attaching to QEMU monitor... (Press Ctrl+] to exit)${reset}"
-stty raw -echo  # Enable raw mode to pass Ctrl+C to QEMU
-socat - UNIX-CONNECT:/home/container/qemu-monitor.sock
-stty sane  # Restore terminal settings after socat exits
+socat -,raw,echo=0,escape=0x1d UNIX-CONNECT:/tmp/qemu-serial.sock
 
 shutdown_qemu  # Call shutdown function if socat exits normally
